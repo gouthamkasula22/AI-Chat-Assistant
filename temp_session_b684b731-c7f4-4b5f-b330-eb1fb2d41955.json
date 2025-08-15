@@ -1,0 +1,1 @@
+{"messages": [{"role": "user", "content": "hello"}, {"role": "assistant", "content": "Hello! How can I help you today?"}], "message_count": 2, "conversation_started": true, "response_times": [2.6184511184692383], "total_response_time": 2.6184511184692383, "session_id": "b684b731-c7f4-4b5f-b330-eb1fb2d41955"}

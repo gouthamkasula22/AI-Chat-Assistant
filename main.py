@@ -2,6 +2,8 @@ import streamlit as st
 import requests
 import time
 import uuid
+import json
+import os
 
 st.set_page_config(
     page_title="AI Chat Assistant", 
@@ -9,11 +11,55 @@ st.set_page_config(
     layout="centered"
 )
 
-# Force session state to persist across refreshes
-@st.cache_data(persist=True, show_spinner=False)
-def get_persistent_session_id():
-    """Generate a persistent session ID that survives browser refreshes"""
-    return str(uuid.uuid4())
+# Create a persistent session management system
+def get_browser_session_id():
+    """Generate a consistent session ID that persists across browser refreshes"""
+    # Use Streamlit's built-in session state to create a persistent session
+    if 'browser_session_id' not in st.session_state:
+        st.session_state.browser_session_id = str(uuid.uuid4())
+    return st.session_state.browser_session_id
+
+def save_session_data():
+    """Save session data to a temporary file for persistence"""
+    try:
+        session_id = get_browser_session_id()
+        session_file = f"temp_session_{session_id}.json"
+        
+        session_data = {
+            'messages': st.session_state.messages,
+            'message_count': st.session_state.message_count,
+            'conversation_started': st.session_state.conversation_started,
+            'response_times': st.session_state.response_times,
+            'total_response_time': st.session_state.total_response_time,
+            'session_id': st.session_state.session_id
+        }
+        
+        with open(session_file, 'w') as f:
+            json.dump(session_data, f)
+    except Exception:
+        pass  # Silent fail if can't save
+
+def load_session_data():
+    """Load session data from temporary file"""
+    try:
+        session_id = get_browser_session_id()
+        session_file = f"temp_session_{session_id}.json"
+        
+        if os.path.exists(session_file):
+            with open(session_file, 'r') as f:
+                session_data = json.load(f)
+                
+            # Restore session state
+            st.session_state.messages = session_data.get('messages', [])
+            st.session_state.message_count = session_data.get('message_count', 0)
+            st.session_state.conversation_started = session_data.get('conversation_started', False)
+            st.session_state.response_times = session_data.get('response_times', [])
+            st.session_state.total_response_time = session_data.get('total_response_time', 0)
+            st.session_state.session_id = session_data.get('session_id', get_browser_session_id())
+            return True
+    except Exception:
+        pass  # Silent fail if can't load
+    return False
 
 # Custom CSS for clean, professional look
 st.markdown("""
@@ -121,7 +167,52 @@ header {visibility: hidden;}
 }
 
 .stButton {
-    display: none;
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* Force all buttons to be visible and clickable */
+.stButton > button {
+    color: white !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: block !important;
+    background-color: #4a5568 !important;
+    border: 1px solid #667eea !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+/* Clear button specific styling */
+div[data-testid="column"]:nth-child(3) .stButton button {
+    background: #dc3545 !important;
+    color: white !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: block !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    border: 2px solid #dc3545 !important;
+    border-radius: 8px !important;
+    padding: 0.6rem 1rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+}
+
+/* Stats button specific styling */
+div[data-testid="column"]:nth-child(2) .stButton button {
+    background: #667eea !important;
+    color: white !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: block !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    border: 2px solid #667eea !important;
+    border-radius: 8px !important;
+    padding: 0.6rem 1rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
 }
 
 /* Clear button styling */
@@ -243,87 +334,102 @@ st.markdown('<p class="subtitle">Powered by Google Gemini AI</p>', unsafe_allow_
 def initialize_session_state():
     """Initialize session state with persistent conversation data"""
     
+    # Try to load existing session data first
+    session_loaded = load_session_data()
+    
     # Create a unique session key that persists across refreshes
     if "session_key" not in st.session_state:
-        st.session_state.session_key = get_persistent_session_id()
+        st.session_state.session_key = get_browser_session_id()
     
-    # Initialize conversation data with persistence
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    # Initialize conversation data with persistence (only if not loaded)
+    if not session_loaded:
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
+        if "last_input" not in st.session_state:
+            st.session_state.last_input = None
+        if "session_id" not in st.session_state:
+            st.session_state.session_id = st.session_state.session_key
+        if "message_count" not in st.session_state:
+            st.session_state.message_count = 0
+        if "conversation_started" not in st.session_state:
+            st.session_state.conversation_started = False
+        if "last_response_time" not in st.session_state:
+            st.session_state.last_response_time = None
+        if "total_response_time" not in st.session_state:
+            st.session_state.total_response_time = 0
+        if "response_times" not in st.session_state:
+            st.session_state.response_times = []  # Track individual response times
+    
+    # Always ensure these exist
     if "last_input" not in st.session_state:
         st.session_state.last_input = None
-    if "session_id" not in st.session_state:
-        st.session_state.session_id = st.session_state.session_key
-    if "message_count" not in st.session_state:
-        st.session_state.message_count = 0
-    if "conversation_started" not in st.session_state:
-        st.session_state.conversation_started = False
     if "last_response_time" not in st.session_state:
         st.session_state.last_response_time = None
-    if "total_response_time" not in st.session_state:
-        st.session_state.total_response_time = 0
-    if "response_times" not in st.session_state:
-        st.session_state.response_times = []  # Track individual response times
 
 # Initialize session state
 initialize_session_state()
 
-# Enhanced clear chat button and session info
-col1, col2, col3 = st.columns([2, 1, 1])
+# Enhanced clear chat button layout
+col1, col2 = st.columns([4, 1])
 
 # Remove the statistics box - we'll show response times with each message instead
 
 # Force button visibility with additional CSS
 st.markdown("""
 <style>
-[data-testid="stButton"] {
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-[data-testid="stButton"] > button {
-    visibility: visible !important;
-    opacity: 1 !important;
+/* Override any hiding CSS for buttons */
+.stButton, .stButton > button {
     display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* Make sure clear buttons are always visible */
+div[data-testid="column"] .stButton button {
+    background: #dc3545 !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 16px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    font-weight: bold !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
+with col1:
+    # Empty space for cleaner layout
+    pass
+
 with col2:
     if st.session_state.messages:
-        if st.button("📊 Stats", key="stats_btn", use_container_width=True):
-            avg_response_time = st.session_state.total_response_time / max(1, len(st.session_state.response_times))
-            st.info(f"""
-            **Conversation Statistics:**
-            - Total Messages: {st.session_state.message_count}
-            - User Messages: {st.session_state.message_count // 2}
-            - AI Responses: {len(st.session_state.response_times)}
-            - Average Response Time: {avg_response_time:.1f}s
-            - Session ID: {st.session_state.session_id[:12]}...
-            """)
-
-with col3:
-    if st.session_state.messages:
-        # Create a more visible clear button with debug info
-        st.markdown(f"""
-        <div style="background: #dc3545; color: white; padding: 0.5rem; 
-                    border-radius: 5px; text-align: center; margin-bottom: 0.5rem;
-                    font-size: 0.8rem;">
-            Clear Chat Available ({len(st.session_state.messages)} messages)
-        </div>
-        """, unsafe_allow_html=True)
-        
-        if st.button("🗑️ Clear Chat", key="clear_btn", use_container_width=True, help="Clear all messages"):
-            # Clear all conversation data
-            st.session_state.messages = []
-            st.session_state.message_count = 0
-            st.session_state.conversation_started = False
-            st.session_state.last_response_time = None
-            st.session_state.total_response_time = 0
-            st.session_state.last_input = None
-            st.session_state.response_times = []  # Clear response times too
+        # Keep only the working clear chat button
+        if st.button("🗑️ Clear Chat", key="clear_simple"):
+            # Clear everything using session state clear
+            st.session_state.clear()
             
-            st.success("✅ Chat cleared! Starting fresh conversation.")
-            time.sleep(0.5)  # Brief pause for user feedback
+            # Reinitialize essential state
+            initialize_session_state()
+            
+            # Clear persistent session data
+            try:
+                # Create new session ID since we cleared everything
+                new_session_id = str(uuid.uuid4())
+                st.session_state.browser_session_id = new_session_id
+                st.session_state.session_id = new_session_id
+                
+                # Remove old session files
+                import glob
+                for session_file in glob.glob("temp_session_*.json"):
+                    try:
+                        os.remove(session_file)
+                    except:
+                        pass
+            except:
+                pass
+                
+            st.success("✅ Chat cleared successfully!")
             st.rerun()
 
 # Display chat messages with response times below each AI response
@@ -491,6 +597,9 @@ if submitted and user_input:
         st.session_state.last_input = user_input
         st.session_state.message_count += 1
         
+        # Save session data after adding user message
+        save_session_data()
+        
         # Show typing indicator
         with st.spinner("🤖 AI is analyzing your message..."):
             start_time = time.time()
@@ -511,6 +620,9 @@ if submitted and user_input:
                 
                 # Store individual response time
                 st.session_state.response_times.append(elapsed)
+                
+                # Save session data for persistence
+                save_session_data()
                 
                 # Simple success notification without large response time box
                 st.success(f"✅ Message delivered successfully!")
