@@ -1,0 +1,40 @@
+[MAIN]
+ignore=venv,__pycache__,temp_session_*.json
+jobs=1
+
+[MESSAGES CONTROL]
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    too-few-public-methods,
+    too-many-locals,
+    too-many-arguments,
+    too-many-branches,
+    too-many-statements,
+    broad-except,
+    import-error,
+    no-member,
+    unused-import
+
+[FORMAT]
+max-line-length=100
+indent-string='    '
+
+[DESIGN]
+max-args=7
+max-locals=15
+max-returns=6
+max-branches=12
+max-statements=50
+max-parents=7
+max-attributes=7
+max-public-methods=20
+max-bool-expr=5
+min-public-methods=1
+max-nested-blocks=5
+
+[BASIC]
+good-names=i,j,k,ex,Run,_,id,db,app
+argument-rgx=[a-z_][a-z0-9_]{2,30}$
+variable-rgx=[a-z_][a-z0-9_]{2,30}$

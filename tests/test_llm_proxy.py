@@ -1,7 +1,7 @@
-
 import unittest
 from unittest.mock import patch, Mock
 from services.llm_proxy import LLMProxy
+
 
 class TestLLMProxy(unittest.TestCase):
     @patch("services.llm_proxy.requests.post")
@@ -32,14 +32,13 @@ class TestLLMProxy(unittest.TestCase):
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {
-            "candidates": [
-                {"content": {"parts": [{"text": "Gemini reply"}]}}
-            ]
+            "candidates": [{"content": {"parts": [{"text": "Gemini reply"}]}}]
         }
         mock_post.return_value = mock_response
         proxy = LLMProxy("fake_key")
         result = proxy.send_message("Hello")
         self.assertEqual(result, "Gemini reply")
+
 
 if __name__ == "__main__":
     unittest.main()
