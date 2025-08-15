@@ -17,6 +17,8 @@ import streamlit as st
 
 # Import our new chat history service
 from services.chat_history_service import ChatHistoryService
+# Import CSS loader utility
+from utils.css_loader import init_styles
 
 st.set_page_config(page_title="AI Chat Assistant", page_icon="💬", layout="centered")
 
@@ -88,6 +90,9 @@ def load_session_data() -> bool:
     return False
 
 
+# Load external CSS styles
+init_styles()
+
 # Custom CSS for clean, professional look
 st.markdown(
     """
@@ -102,27 +107,7 @@ header {visibility: hidden;}
     background: #000000;
 }
 
-/* Title styling */
-.main-title {
-    text-align: center;
-    color: #ffffff;
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.subtitle {
-    text-align: center;
-    color: #cccccc;
-    font-size: 1.1rem;
-    margin-bottom: 2rem;
-}
-
-/* Chat messages */
-.user-message {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 1rem 1.5rem;
+/* Essential Streamlit overrides only - detailed styles loaded from external CSS files */
     border-radius: 25px 25px 8px 25px;
     margin: 0.8rem 0 0.8rem 15%;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
@@ -562,71 +547,7 @@ div[data-testid="column"]:nth-child(2) button {
 }
 
 .conversation-item {
-    animation: fadeInUp 0.3s ease-out !important;
-}
-
-.sidebar-header {
-    animation: slideIn 0.5s ease-out !important;
-}
-
-.current-conversation {
-    animation: glow 2s infinite !important;
-}
-
-/* Status indicators */
-.status-indicator {
-    display: inline-block !important;
-    width: 8px !important;
-    height: 8px !important;
-    border-radius: 50% !important;
-    margin-right: 0.5rem !important;
-}
-
-.status-indicator.current {
-    background: #48bb78 !important;
-    box-shadow: 0 0 6px rgba(72, 187, 120, 0.6) !important;
-}
-
-.status-indicator.inactive {
-    background: #4a5568 !important;
-}
-
-/* Conversation card hover effects */
-.conversation-card-button {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-.conversation-card-button:hover {
-    transform: translateY(-3px) scale(1.02) !important;
-    filter: brightness(1.1) !important;
-}
-
-/* Sidebar floating effect */
-.sidebar-content {
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-}
-
-/* Enhanced button press effects */
-.stButton > button:active {
-    transform: scale(0.98) !important;
-    transition: transform 0.1s !important;
-}
-
-/* Loading shimmer effect */
-@keyframes shimmer {
-    0% {
-        background-position: -200px 0;
-    }
-    100% {
-        background-position: calc(200px + 100%) 0;
-    }
-}
-
-.loading-shimmer {
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-    background-size: 200px 100%;
-    animation: shimmer 1.5s infinite;
+/* Essential Streamlit overrides only - detailed styles loaded from external CSS files */
 }
 </style>
 """,
