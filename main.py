@@ -17,21 +17,38 @@ st.sidebar.info("Type your message below and get a response from Gemini!\n\nYour
 st.title("🤖 Gemini Chatbot")
 st.caption("Powered by Google Gemini 2.0 Flash")
 
+
+# Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Add Clear Chat button
+col1, col2 = st.columns([1, 5])
+with col1:
+    if st.button("Clear Chat"):
+        st.session_state.messages = []
+
+# Chat input
 user_input = st.chat_input("Type your message...")
+
+# Handle user input and LLM response
 
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.spinner("Gemini is thinking..."):
         response = requests.post(
             "http://localhost:8000/chat",
-            json={"message": user_input}
+            json={"history": st.session_state.messages}
         )
         reply = response.json().get("reply", "")
-        st.session_state.messages.append({"role": "assistant", "content": reply})
+        # Only append valid assistant responses, show errors separately
+        if reply and not reply.lower().startswith("http error") and not reply.lower().startswith("request timed out") and not reply.lower().startswith("an unexpected error occurred"):
+            st.session_state.messages.append({"role": "assistant", "content": reply})
+        else:
+            st.error(reply)
 
+# Display chat history with improved spacing and divider
+st.divider()
 for msg in st.session_state.messages:
     if msg["role"] == "user":
         st.markdown(

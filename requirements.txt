@@ -1,5 +1,5 @@
-fastapi
-uvicorn
-streamlit
-python-dotenv
-requests
+fastapi==0.110.0
+uvicorn==0.29.0
+streamlit==1.48.1
+python-dotenv==1.0.1
+requests==2.32.4
