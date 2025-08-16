@@ -174,15 +174,18 @@ class AdvancedAIService:
             
             # Get style-specific parameters
             style_config = self.conversation_styles[style]
-            temperature = kwargs.get('temperature', style_config['temperature'])
+            style_temperature = kwargs.get('temperature', style_config['temperature'])
+            
+            # Prepare kwargs without temperature to avoid conflicts
+            model_kwargs = {k: v for k, v in kwargs.items() if k != 'temperature'}
             
             # Generate response using model manager
             response = self.model_manager.generate_with_fallback(
                 messages=enhanced_messages,
                 session_id=session_id,
                 preferred_model=preferred_model,
-                temperature=temperature,
-                **kwargs
+                temperature=style_temperature,
+                **model_kwargs
             )
             
             # Post-process the response
