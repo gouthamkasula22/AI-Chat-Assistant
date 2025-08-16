@@ -501,8 +501,11 @@ def initialize_session_state():
     if "session_id" not in st.session_state:
         st.session_state.session_id = st.session_state.session_key
     
-    # Load conversation history from database
-    if "messages" not in st.session_state:
+    # Try to load existing session data first
+    session_loaded = load_session_data()
+    
+    # Load conversation history from database if not loaded from session
+    if "messages" not in st.session_state or not session_loaded:
         # Get conversation history from database
         history = st.session_state.chat_service.get_conversation_history(
             session_id=st.session_state.session_id
@@ -1151,6 +1154,9 @@ if submitted and user_input:
 
                     # Store individual response time
                     st.session_state.response_times.append(elapsed)
+
+                    # Save session data to persist response times
+                    save_session_data()
 
                     # Success notification
                     st.success(f"✅ Message delivered successfully!")
