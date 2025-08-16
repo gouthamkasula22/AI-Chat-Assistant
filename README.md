@@ -38,7 +38,6 @@ I wanted to build a chatbot that could switch between different AI models withou
 ✅ **Clean Interface**
 - Dark theme that's easy on the eyes
 - Inline model selection (no cluttered sidebars)
-- GitHub Copilot-style design philosophy
 
 ## Getting Started
 
