@@ -1,0 +1,112 @@
+/* Main App Styling */
+.main {
+    background-color: #1a202c;
+    color: #e2e8f0;
+}
+
+/* Input Container */
+.input-container {
+    background-color: #2d3748;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #4a5568;
+    margin-bottom: 20px;
+}
+
+/* AI Model and Style selectors - Compact design */
+.stSelectbox {
+    margin-bottom: 8px !important;
+}
+
+.stSelectbox > div > div {
+    background-color: #2d3748 !important;
+    border: 1px solid #4a5568 !important;
+    border-radius: 6px !important;
+    font-size: 0.9rem !important;
+    padding: 4px 8px !important;
+    min-height: 35px !important;
+}
+
+.stSelectbox label {
+    font-size: 0.8rem !important;
+    color: #a0aec0 !important;
+    font-weight: 500 !important;
+    margin-bottom: 4px !important;
+}
+
+.stSelectbox > div > div > div {
+    color: #e2e8f0 !important;
+    font-size: 0.9rem !important;
+}
+
+/* Text input styling */
+.stTextInput > div > div > input {
+    background-color: #2d3748 !important;
+    border: 1px solid #4a5568 !important;
+    border-radius: 8px !important;
+    color: #e2e8f0 !important;
+    padding: 12px 16px !important;
+    font-size: 1rem !important;
+}
+
+.stTextInput > div > div > input:focus {
+    border-color: #4299e1 !important;
+    box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.2) !important;
+}
+
+/* Submit button styling */
+.stFormSubmitButton > button {
+    background-color: #4299e1 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 12px 16px !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+
+.stFormSubmitButton > button:hover {
+    background-color: #3182ce !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Chat message styling */
+.user-message {
+    background-color: #4299e1;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 12px 12px 4px 12px;
+    margin-bottom: 16px;
+    margin-left: 20%;
+}
+
+.assistant-message {
+    background-color: #2d3748;
+    color: #e2e8f0;
+    padding: 12px 16px;
+    border-radius: 12px 12px 12px 4px;
+    margin-bottom: 16px;
+    margin-right: 20%;
+    border-left: 3px solid #4299e1;
+}
+
+/* Sidebar styling */
+.css-1d391kg {
+    background-color: #1a202c !important;
+}
+
+/* Remove default Streamlit padding */
+.css-18e3th9 {
+    padding-top: 1rem !important;
+}
+
+/* Professional, clean look */
+.stMarkdown {
+    color: #e2e8f0 !important;
+}
+
+/* Hide Streamlit header and footer */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}

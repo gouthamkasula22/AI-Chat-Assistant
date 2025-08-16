@@ -17,6 +17,7 @@ import streamlit as st
 
 # Import our new chat history service
 from services.chat_history_service import ChatHistoryService
+from services.advanced_ai_service import AdvancedAIService, ConversationStyle
 
 st.set_page_config(page_title="AI Chat Assistant", page_icon="💬", layout="centered")
 
@@ -25,6 +26,12 @@ st.set_page_config(page_title="AI Chat Assistant", page_icon="💬", layout="cen
 def get_chat_history_service():
     """Initialize and cache the chat history service."""
     return ChatHistoryService()
+
+# Initialize advanced AI service
+@st.cache_resource
+def get_advanced_ai_service():
+    """Initialize and cache the advanced AI service."""
+    return AdvancedAIService()
 
 
 def get_browser_session_id() -> str:
@@ -352,281 +359,88 @@ div[data-testid="column"]:nth-child(2) button {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* Enhanced Sidebar Styling */
-.css-1d391kg, .css-1lcbmhc, .css-1v3fvcr {
-    background: linear-gradient(145deg, #1a202c 0%, #2d3748 100%) !important;
-    border-right: 2px solid #4a5568 !important;
+/* Sidebar styling */
+.css-1d391kg {
+    background: #1a202c !important;
 }
 
-/* Sidebar content styling */
 .sidebar .stMarkdown {
     color: #e2e8f0 !important;
 }
 
-.sidebar h3 {
-    color: #e2e8f0 !important;
-    font-weight: 600 !important;
-    margin-bottom: 1rem !important;
-    text-align: center !important;
-    background: linear-gradient(135deg, #667eea, #764ba2) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    background-clip: text !important;
-}
-
-/* Enhanced New Chat Button */
-.sidebar .stButton:first-child > button {
-    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%) !important;
+.sidebar .stButton > button {
+    background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%) !important;
     color: white !important;
-    border: none !important;
-    border-radius: 12px !important;
-    padding: 0.75rem 1rem !important;
-    font-size: 1rem !important;
-    font-weight: 600 !important;
-    width: 100% !important;
-    margin-bottom: 1rem !important;
-    box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3) !important;
-    transition: all 0.3s ease !important;
-    cursor: pointer !important;
-    text-transform: none !important;
-}
-
-.sidebar .stButton:first-child > button:hover {
-    background: linear-gradient(135deg, #68d391 0%, #48bb78 100%) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4) !important;
-}
-
-/* Conversation Cards */
-.conversation-card {
-    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
     border: 1px solid #4a5568 !important;
-    border-radius: 12px !important;
-    padding: 0.75rem !important;
-    margin: 0.5rem 0 !important;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3) !important;
-    transition: all 0.3s ease !important;
-    cursor: pointer !important;
-}
-
-.conversation-card:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.2) !important;
-    border-color: #667eea !important;
-}
-
-.conversation-card.current {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    border-color: #667eea !important;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
-}
-
-/* Conversation Buttons */
-.sidebar .stButton:not(:first-child) > button {
-    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
-    color: #e2e8f0 !important;
-    border: 1px solid #4a5568 !important;
-    border-radius: 10px !important;
-    padding: 0.6rem 0.8rem !important;
-    margin: 0.3rem 0 !important;
+    border-radius: 8px !important;
+    margin-bottom: 0.5rem !important;
     font-size: 0.9rem !important;
-    width: 100% !important;
-    text-align: left !important;
+    padding: 0.5rem !important;
     transition: all 0.3s ease !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
-.sidebar .stButton:not(:first-child) > button:hover {
+.sidebar .stButton > button:hover {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
     border-color: #667eea !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
-    color: white !important;
 }
 
-/* Sidebar Divider */
-.sidebar hr {
-    border: none !important;
-    height: 2px !important;
-    background: linear-gradient(90deg, transparent, #4a5568, transparent) !important;
-    margin: 1rem 0 !important;
-}
-
-/* Conversation Meta Info */
-.conversation-meta {
-    font-size: 0.75rem !important;
-    color: #a0aec0 !important;
-    margin-top: 0.25rem !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-}
-
-.conversation-meta .date {
-    opacity: 0.8 !important;
-}
-
-.conversation-meta .message-count {
-    background: rgba(102, 126, 234, 0.2) !important;
-    padding: 0.2rem 0.4rem !important;
-    border-radius: 8px !important;
-    font-weight: 500 !important;
-}
-
-/* Sidebar Stats */
-.sidebar .stMetric {
-    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
-    border: 1px solid #4a5568 !important;
-    border-radius: 10px !important;
-    padding: 0.75rem !important;
-    margin: 0.3rem 0 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
-}
-
-.sidebar .stMetric label {
-    color: #a0aec0 !important;
-    font-size: 0.8rem !important;
-    font-weight: 500 !important;
-}
-
-.sidebar .stMetric [data-testid="metric-value"] {
-    color: #667eea !important;
+/* New Chat button special styling */
+.sidebar .stButton:first-child > button {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%) !important;
+    border-color: #48bb78 !important;
     font-weight: 600 !important;
-    font-size: 1.2rem !important;
 }
 
-/* Sidebar Expander */
-.sidebar .streamlit-expanderHeader {
-    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
+.sidebar .stButton:first-child > button:hover {
+    background: linear-gradient(135deg, #68d391 0%, #48bb78 100%) !important;
+}
+
+/* Sidebar metrics styling */
+.sidebar .metric-container {
+    background: #2d3748 !important;
     border: 1px solid #4a5568 !important;
-    border-radius: 10px !important;
+    border-radius: 8px !important;
+    padding: 0.5rem !important;
+    margin: 0.25rem 0 !important;
+}
+
+/* Inline AI selector styling */
+.stSelectbox > div > div {
+    background: #2d3748 !important;
+    border: 1px solid #4a5568 !important;
+    border-radius: 8px !important;
     color: #e2e8f0 !important;
+}
+
+.stSelectbox > div > div > div {
+    color: #e2e8f0 !important;
+}
+
+.stSelectbox label {
+    color: #a0aec0 !important;
+    font-size: 0.85rem !important;
     font-weight: 500 !important;
+    margin-bottom: 0.25rem !important;
 }
 
-.sidebar .streamlit-expanderContent {
-    background: #1a202c !important;
+/* Input container styling */
+.input-container .stSelectbox {
+    margin-bottom: 1rem !important;
+}
+
+/* Clean selectbox dropdown */
+.stSelectbox > div > div[data-baseweb="select"] > div {
+    background: #2d3748 !important;
     border: 1px solid #4a5568 !important;
-    border-top: none !important;
-    border-radius: 0 0 10px 10px !important;
+    color: #e2e8f0 !important;
 }
 
-/* Scroll styling for sidebar */
-.sidebar::-webkit-scrollbar {
-    width: 6px !important;
-}
-
-.sidebar::-webkit-scrollbar-track {
-    background: #1a202c !important;
-}
-
-.sidebar::-webkit-scrollbar-thumb {
-    background: #4a5568 !important;
-    border-radius: 3px !important;
-}
-
-.sidebar::-webkit-scrollbar-thumb:hover {
-    background: #667eea !important;
-}
-
-/* Animation keyframes */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes glow {
-    0%, 100% {
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-    }
-    50% {
-        box-shadow: 0 4px 25px rgba(102, 126, 234, 0.5);
-    }
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateX(-100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-.conversation-item {
-    animation: fadeInUp 0.3s ease-out !important;
-}
-
-.sidebar-header {
-    animation: slideIn 0.5s ease-out !important;
-}
-
-.current-conversation {
-    animation: glow 2s infinite !important;
-}
-
-/* Status indicators */
-.status-indicator {
-    display: inline-block !important;
-    width: 8px !important;
-    height: 8px !important;
-    border-radius: 50% !important;
-    margin-right: 0.5rem !important;
-}
-
-.status-indicator.current {
-    background: #48bb78 !important;
-    box-shadow: 0 0 6px rgba(72, 187, 120, 0.6) !important;
-}
-
-.status-indicator.inactive {
-    background: #4a5568 !important;
-}
-
-/* Conversation card hover effects */
-.conversation-card-button {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-.conversation-card-button:hover {
-    transform: translateY(-3px) scale(1.02) !important;
-    filter: brightness(1.1) !important;
-}
-
-/* Sidebar floating effect */
-.sidebar-content {
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-}
-
-/* Enhanced button press effects */
-.stButton > button:active {
-    transform: scale(0.98) !important;
-    transition: transform 0.1s !important;
-}
-
-/* Loading shimmer effect */
-@keyframes shimmer {
-    0% {
-        background-position: -200px 0;
-    }
-    100% {
-        background-position: calc(200px + 100%) 0;
-    }
-}
-
-.loading-shimmer {
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-    background-size: 200px 100%;
-    animation: shimmer 1.5s infinite;
+/* Selectbox options */
+.stSelectbox > div > div[data-baseweb="select"] > div > div {
+    background: #2d3748 !important;
+    color: #e2e8f0 !important;
 }
 </style>
 """,
@@ -643,10 +457,24 @@ try:
         st.session_state.session_id
     )
     if current_conversation and st.session_state.messages:
+        # Get current AI model and style
+        current_model = getattr(st.session_state, 'selected_ai_model', 'Auto')
+        current_style = getattr(st.session_state, 'selected_style', 'helpful')
+        
         st.markdown(
             f'<div style="text-align: center; color: #a0aec0; margin-bottom: 1rem; font-size: 0.9rem;">'
-            f'📝 Current: <strong>{current_conversation["title"]}</strong> '
-            f'({current_conversation["total_messages"]} messages)</div>',
+            f'📝 <strong>{current_conversation["title"]}</strong> • '
+            f'🤖 {current_model} • 🎭 {current_style.title()} • '
+            f'💬 {current_conversation["total_messages"]} messages</div>',
+            unsafe_allow_html=True
+        )
+    elif hasattr(st.session_state, 'selected_ai_model') and st.session_state.selected_ai_model:
+        # Show model info even for new conversations
+        current_model = st.session_state.selected_ai_model
+        current_style = getattr(st.session_state, 'selected_style', 'helpful')
+        st.markdown(
+            f'<div style="text-align: center; color: #a0aec0; margin-bottom: 1rem; font-size: 0.9rem;">'
+            f'🤖 {current_model} • 🎭 {current_style.title()}</div>',
             unsafe_allow_html=True
         )
 except:
@@ -664,6 +492,10 @@ def initialize_session_state():
     # Initialize our chat history service
     if "chat_service" not in st.session_state:
         st.session_state.chat_service = get_chat_history_service()
+    
+    # Initialize our advanced AI service
+    if "ai_service" not in st.session_state:
+        st.session_state.ai_service = get_advanced_ai_service()
     
     # Initialize session ID
     if "session_id" not in st.session_state:
@@ -698,6 +530,14 @@ def initialize_session_state():
     if "response_times" not in st.session_state:
         st.session_state.response_times = []
     
+    # Initialize AI configuration
+    if "selected_ai_model" not in st.session_state:
+        st.session_state.selected_ai_model = None
+    if "selected_style" not in st.session_state:
+        st.session_state.selected_style = "helpful"
+    if "temperature" not in st.session_state:
+        st.session_state.temperature = 0.7
+    
     # Migration: Check for old session files and import them
     if "migration_checked" not in st.session_state:
         try:
@@ -725,72 +565,12 @@ def initialize_session_state():
 # Initialize session state
 initialize_session_state()
 
-# Enhanced Chat History Sidebar
+# Chat History Sidebar
 with st.sidebar:
-    # Sidebar Header with gradient
-    # Get conversation count for display
-    try:
-        conv_count = len(st.session_state.chat_service.get_recent_conversations(limit=100))
-    except:
-        conv_count = 0
+    st.markdown("### 💬 Chat History")
     
-    st.markdown(f"""
-        <div class="sidebar-header" style="
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 1rem;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            position: relative;
-            overflow: hidden;
-        ">
-            <div style="
-                position: absolute;
-                top: -50%;
-                left: -50%;
-                width: 200%;
-                height: 200%;
-                background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-                animation: rotate 20s linear infinite;
-            "></div>
-            
-            <h2 style="
-                color: white;
-                margin: 0;
-                font-size: 1.3rem;
-                font-weight: 600;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                position: relative;
-                z-index: 1;
-            ">💬 Chat History</h2>
-            <p style="
-                color: rgba(255,255,255,0.9);
-                margin: 0.5rem 0 0 0;
-                font-size: 0.9rem;
-                position: relative;
-                z-index: 1;
-            ">
-                {conv_count} conversation{'s' if conv_count != 1 else ''} • Always saved
-            </p>
-        </div>
-        
-        <style>
-        @keyframes rotate {{
-            from {{ transform: rotate(0deg); }}
-            to {{ transform: rotate(360deg); }}
-        }}
-        </style>
-    """, unsafe_allow_html=True)
-    
-    # Enhanced New Chat button
-    new_chat_clicked = st.button(
-        "✨ Start New Chat", 
-        use_container_width=True,
-        help="Begin a fresh conversation"
-    )
-    
-    if new_chat_clicked:
+    # New Chat button
+    if st.button("➕ New Chat", use_container_width=True):
         try:
             # Clear current session state
             st.session_state.clear()
@@ -805,292 +585,167 @@ with st.sidebar:
         except Exception as e:
             st.error(f"Error starting new chat: {str(e)}")
     
-    # Elegant divider
-    st.markdown("""
-        <div style="
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #4a5568, transparent);
-            margin: 1.5rem 0;
-        "></div>
-    """, unsafe_allow_html=True)
+    st.markdown("---")
     
-    # Recent Conversations Section
+    # Show recent conversations
     try:
-        recent_conversations = st.session_state.chat_service.get_recent_conversations(limit=8)
+        recent_conversations = st.session_state.chat_service.get_recent_conversations(limit=10)
         
         if recent_conversations:
-            st.markdown("""
-                <div style="
-                    color: #e2e8f0;
-                    font-size: 1.1rem;
-                    font-weight: 600;
-                    margin-bottom: 1rem;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                ">
-                    📚 Recent Conversations
-                    <span style="
-                        background: rgba(102, 126, 234, 0.2);
-                        color: #667eea;
-                        padding: 0.2rem 0.5rem;
-                        border-radius: 10px;
-                        font-size: 0.8rem;
-                        font-weight: 500;
-                    ">{}</span>
-                </div>
-            """.format(len(recent_conversations)), unsafe_allow_html=True)
+            st.markdown("**Recent Conversations:**")
             
-            for i, conv in enumerate(recent_conversations):
-                # Format conversation data
+            for conv in recent_conversations:
+                # Create a shorter display title
                 display_title = conv['title']
-                if len(display_title) > 28:
-                    display_title = display_title[:25] + "..."
+                if len(display_title) > 30:
+                    display_title = display_title[:27] + "..."
                 
-                created_date = conv['created_at'][:10]
+                # Show conversation info
+                created_date = conv['created_at'][:10]  # Just the date part
                 message_count = conv['total_messages']
+                
+                # Check if this is the current conversation
                 is_current = conv['session_id'] == st.session_state.session_id
                 
-                # Time ago calculation
-                try:
-                    from datetime import datetime
-                    created_dt = datetime.fromisoformat(conv['created_at'])
-                    now = datetime.now()
-                    diff = now - created_dt
-                    
-                    if diff.days > 0:
-                        time_ago = f"{diff.days}d ago"
-                    elif diff.seconds > 3600:
-                        time_ago = f"{diff.seconds//3600}h ago"
-                    elif diff.seconds > 60:
-                        time_ago = f"{diff.seconds//60}m ago"
+                # Create a container for each conversation
+                with st.container():
+                    if is_current:
+                        st.markdown(f"**🔹 {display_title}**")
+                        st.caption(f"📅 {created_date} • 💬 {message_count} messages (Current)")
                     else:
-                        time_ago = "Just now"
-                except:
-                    time_ago = created_date
+                        # Button to switch to this conversation
+                        if st.button(f"💬 {display_title}", key=f"conv_{conv['id']}", use_container_width=True):
+                            try:
+                                # Switch to this conversation
+                                st.session_state.session_id = conv['session_id']
+                                st.session_state.session_key = conv['session_id']
+                                
+                                # Load conversation history
+                                history = st.session_state.chat_service.get_conversation_history(
+                                    session_id=conv['session_id']
+                                )
+                                
+                                # Update session state
+                                st.session_state.messages = []
+                                for msg in history:
+                                    st.session_state.messages.append({
+                                        "role": msg["role"],
+                                        "content": msg["content"]
+                                    })
+                                
+                                st.session_state.message_count = len(st.session_state.messages)
+                                st.session_state.conversation_started = len(st.session_state.messages) > 0
+                                
+                                st.success(f"📂 Loaded conversation: {conv['title']}")
+                                st.rerun()
+                                
+                            except Exception as e:
+                                st.error(f"Error loading conversation: {str(e)}")
+                        
+                        st.caption(f"📅 {created_date} • 💬 {message_count} messages")
                 
-                # Create conversation card
-                if is_current:
-                    # Current conversation - special styling
-                    st.markdown(f"""
-                        <div style="
-                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                            border: 2px solid #667eea;
-                            border-radius: 12px;
-                            padding: 1rem;
-                            margin: 0.5rem 0;
-                            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-                            position: relative;
-                            overflow: hidden;
-                        ">
-                            <div style="
-                                position: absolute;
-                                top: 0.5rem;
-                                right: 0.5rem;
-                                background: rgba(255,255,255,0.9);
-                                color: #667eea;
-                                padding: 0.2rem 0.5rem;
-                                border-radius: 8px;
-                                font-size: 0.7rem;
-                                font-weight: 600;
-                            ">ACTIVE</div>
-                            
-                            <div style="
-                                color: white;
-                                font-weight: 600;
-                                font-size: 1rem;
-                                margin-bottom: 0.5rem;
-                                text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-                            ">� {display_title}</div>
-                            
-                            <div style="
-                                display: flex;
-                                justify-content: space-between;
-                                align-items: center;
-                                color: rgba(255,255,255,0.9);
-                                font-size: 0.8rem;
-                            ">
-                                <span>📅 {time_ago}</span>
-                                <span style="
-                                    background: rgba(255,255,255,0.2);
-                                    padding: 0.2rem 0.5rem;
-                                    border-radius: 8px;
-                                    font-weight: 500;
-                                ">💬 {message_count}</span>
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    # Non-current conversations - clickable cards
-                    conversation_key = f"conv_card_{conv['id']}"
-                    
-                    # Create clickable button that looks like a card
-                    if st.button(
-                        f"💬 {display_title}",
-                        key=conversation_key,
-                        use_container_width=True,
-                        help=f"Switch to '{conv['title']}' ({message_count} messages)"
-                    ):
-                        try:
-                            # Switch to this conversation
-                            st.session_state.session_id = conv['session_id']
-                            st.session_state.session_key = conv['session_id']
-                            
-                            # Load conversation history
-                            history = st.session_state.chat_service.get_conversation_history(
-                                session_id=conv['session_id']
-                            )
-                            
-                            # Update session state
-                            st.session_state.messages = []
-                            for msg in history:
-                                st.session_state.messages.append({
-                                    "role": msg["role"],
-                                    "content": msg["content"]
-                                })
-                            
-                            st.session_state.message_count = len(st.session_state.messages)
-                            st.session_state.conversation_started = len(st.session_state.messages) > 0
-                            
-                            st.success(f"📂 Loaded: {conv['title']}")
-                            st.rerun()
-                            
-                        except Exception as e:
-                            st.error(f"Error loading conversation: {str(e)}")
-                    
-                    # Add metadata below button
-                    st.markdown(f"""
-                        <div style="
-                            color: #a0aec0;
-                            font-size: 0.75rem;
-                            margin: -0.5rem 0 0.5rem 0;
-                            display: flex;
-                            justify-content: space-between;
-                            padding: 0 0.5rem;
-                        ">
-                            <span>📅 {time_ago}</span>
-                            <span style="
-                                background: rgba(102, 126, 234, 0.2);
-                                color: #667eea;
-                                padding: 0.1rem 0.4rem;
-                                border-radius: 6px;
-                                font-weight: 500;
-                            ">💬 {message_count}</span>
-                        </div>
-                    """, unsafe_allow_html=True)
+                st.markdown("")  # Add some spacing
         else:
-            # No conversations found
-            st.markdown("""
-                <div style="
-                    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
-                    border: 2px dashed #4a5568;
-                    border-radius: 12px;
-                    padding: 2rem 1rem;
-                    text-align: center;
-                    color: #a0aec0;
-                    margin: 1rem 0;
-                ">
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">💭</div>
-                    <div style="font-weight: 600; margin-bottom: 0.5rem;">No conversations yet</div>
-                    <div style="font-size: 0.9rem; opacity: 0.8;">Start chatting to see your history here!</div>
-                </div>
-            """, unsafe_allow_html=True)
+            st.info("No previous conversations found.")
             
     except Exception as e:
         st.error(f"Error loading chat history: {str(e)}")
     
-    # Enhanced Database Statistics
-    st.markdown("""
-        <div style="
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #4a5568, transparent);
-            margin: 1.5rem 0;
-        "></div>
-    """, unsafe_allow_html=True)
-    
-    with st.expander("📊 Database Analytics", expanded=False):
+    # Database Statistics (collapsible)
+    with st.expander("📊 Database Stats"):
         try:
             stats = st.session_state.chat_service.get_service_stats()
             db_stats = stats['database_stats']
             
-            # Create metrics with custom styling
-            col1, col2 = st.columns(2)
+            st.metric("Total Conversations", db_stats['conversations'])
+            st.metric("Total Messages", db_stats['messages'])
             
-            with col1:
-                st.metric(
-                    "💬 Conversations", 
-                    db_stats['conversations'],
-                    help="Total number of chat conversations"
-                )
-                
-            with col2:
-                st.metric(
-                    "💭 Messages", 
-                    db_stats['messages'],
-                    help="Total messages exchanged"
-                )
-            
-            # Database size with custom display
+            # Database size in a readable format
             db_size_kb = db_stats['db_size_bytes'] / 1024
             if db_size_kb < 1024:
                 size_display = f"{db_size_kb:.1f} KB"
             else:
                 size_display = f"{db_size_kb/1024:.1f} MB"
+            st.metric("Database Size", size_display)
             
-            st.metric(
-                "� Storage Used", 
-                size_display,
-                help="Database file size on disk"
-            )
-            
-            # Service status indicator
-            status = stats['service_status']
-            status_color = "#48bb78" if status == "healthy" else "#f56565"
-            
-            st.markdown(f"""
-                <div style="
-                    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
-                    border: 1px solid {status_color};
-                    border-radius: 8px;
-                    padding: 0.75rem;
-                    margin-top: 1rem;
-                    text-align: center;
-                ">
-                    <span style="color: {status_color}; font-weight: 600;">
-                        {'🟢' if status == 'healthy' else '🔴'} Service Status: {status.title()}
-                    </span>
-                </div>
-            """, unsafe_allow_html=True)
+            st.caption(f"Service Status: {stats['service_status']}")
             
         except Exception as e:
             st.error(f"Error loading stats: {str(e)}")
     
-    # Quick Actions (optional)
-    st.markdown("""
-        <div style="
-            margin-top: 1rem;
-            padding: 1rem;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 10px;
-            border: 1px solid rgba(102, 126, 234, 0.2);
-        ">
-            <div style="
-                color: #667eea;
-                font-size: 0.9rem;
-                font-weight: 600;
-                margin-bottom: 0.5rem;
-                text-align: center;
-            ">💡 Quick Tip</div>
-            <div style="
-                color: #a0aec0;
-                font-size: 0.8rem;
-                text-align: center;
-                line-height: 1.4;
-            ">
-                Click any conversation to switch between your chats. Your progress is automatically saved!
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+    # AI Advanced Settings
+    with st.expander("⚙️ Advanced Settings"):
+        try:
+            # Temperature control
+            temperature = st.slider(
+                "Response Creativity",
+                min_value=0.1,
+                max_value=1.0,
+                value=0.7,
+                step=0.1,
+                help="Higher values = more creative/random responses"
+            )
+            st.session_state.temperature = temperature
+            
+            # Model testing
+            if st.button("🧪 Test AI Models", use_container_width=True):
+                with st.spinner("Testing AI models..."):
+                    test_results = st.session_state.ai_service.test_model_connectivity()
+                    
+                    for model_name, result in test_results.items():
+                        status = "✅" if result['is_available'] else "❌"
+                        st.caption(f"{status} {model_name}: {result.get('error_message', 'OK')}")
+            
+        except Exception as e:
+            st.error(f"Error loading AI settings: {str(e)}")
+    
+    # AI Analytics Dashboard
+    with st.expander("📈 AI Analytics"):
+        try:
+            analytics = st.session_state.ai_service.get_service_analytics()
+            
+            # Usage metrics
+            st.subheader("Usage Statistics")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.metric("Total Requests", analytics['usage_analytics']['total_requests'])
+                st.metric("Success Rate", f"{analytics['success_rate_percentage']}%")
+            
+            with col2:
+                st.metric("Successful", analytics['usage_analytics']['successful_requests'])
+                st.metric("Failed", analytics['usage_analytics']['failed_requests'])
+            
+            # Average response time
+            avg_time = analytics['usage_analytics']['average_response_time']
+            st.metric("Avg Response Time", f"{avg_time:.2f}s")
+            
+            # Model usage breakdown
+            if analytics['usage_analytics']['model_usage']:
+                st.subheader("Model Usage")
+                for model, count in analytics['usage_analytics']['model_usage'].items():
+                    st.caption(f"🤖 {model}: {count} requests")
+            
+            # Style usage breakdown
+            if analytics['usage_analytics']['style_usage']:
+                st.subheader("Style Usage")
+                for style, count in analytics['usage_analytics']['style_usage'].items():
+                    st.caption(f"🎭 {style.title()}: {count} requests")
+            
+            # System health
+            st.subheader("System Health")
+            health = analytics['service_health']
+            health_color = "🟢" if health == "healthy" else "🟡"
+            st.caption(f"{health_color} Status: {health.title()}")
+            
+            # Model system status
+            model_status = analytics['model_system_status']
+            available_models = sum(1 for model in model_status['models'].values() 
+                                 if model['is_available'] and model['within_rate_limit'])
+            st.caption(f"🤖 Available Models: {available_models}/{model_status['total_models']}")
+            
+        except Exception as e:
+            st.error(f"Error loading analytics: {str(e)}")
 
 # Enhanced clear chat button layout
 col1, col2 = st.columns([4, 1])
@@ -1203,9 +858,97 @@ for i, message in enumerate(st.session_state.messages):
 
         response_index += 1  # Increment for next AI response
 
-# Input form
+# Input form with AI model selection
 st.markdown('<div class="input-container">', unsafe_allow_html=True)
 with st.form(key="chat_form", clear_on_submit=True):
+    # AI Model & Style selector in compact row
+    col_model, col_style, col_spacer = st.columns([2, 2, 6])
+    
+    with col_model:
+        # Get available models
+        try:
+            available_models = st.session_state.ai_service.get_available_models()
+            model_options = []
+            model_names = []
+            
+            for model in available_models:
+                # Create more distinct shortened names
+                name = model['name']
+                if 'DialoGPT Large' in name:
+                    short_name = 'DialoGPT-L'
+                elif 'DialoGPT Medium' in name:
+                    short_name = 'DialoGPT-M'
+                elif 'BlenderBot 400M' in name:
+                    short_name = 'BlenderBot'
+                elif 'Gemini Pro' in name:
+                    short_name = 'Gemini Pro'
+                else:
+                    # Fallback: remove common suffixes
+                    short_name = name.replace(' Large', '').replace(' Medium', '').replace(' 400M', '')
+                
+                model_options.append(short_name)
+                model_names.append(model['name'])
+            
+            if model_options:
+                # Find the index of the currently selected model
+                current_model = getattr(st.session_state, 'selected_ai_model', None)
+                default_idx = 0
+                if current_model and current_model in model_names:
+                    default_idx = model_names.index(current_model)
+                
+                selected_model_idx = st.selectbox(
+                    "Model",
+                    range(len(model_options)),
+                    format_func=lambda x: model_options[x],
+                    index=default_idx,
+                    key="inline_model_selection",
+                    help="AI Model"
+                )
+                
+                if model_names:
+                    st.session_state.selected_ai_model = model_names[selected_model_idx]
+            else:
+                st.warning("No models")
+                
+        except Exception as e:
+            st.error(f"Model error: {str(e)}")
+    
+    with col_style:
+        # Conversation style selector
+        try:
+            available_styles = st.session_state.ai_service.get_conversation_styles()
+            style_options = list(available_styles.keys())
+            # Shortened style names for compact display
+            style_short_names = {
+                'friendly': 'Friendly',
+                'professional': 'Professional', 
+                'creative': 'Creative',
+                'analytical': 'Analytical',
+                'casual': 'Casual',
+                'helpful': 'Helpful'
+            }
+            
+            # Find the index of the currently selected style
+            current_style = getattr(st.session_state, 'selected_style', 'helpful')
+            default_style_idx = 5  # Default to "helpful"
+            if current_style and current_style in style_options:
+                default_style_idx = style_options.index(current_style)
+            
+            selected_style_idx = st.selectbox(
+                "Style",
+                range(len(style_options)),
+                format_func=lambda x: style_short_names.get(style_options[x], style_options[x].title()),
+                index=default_style_idx,
+                key="inline_style_selection",
+                help="Conversation Style"
+            )
+            
+            st.session_state.selected_style = style_options[selected_style_idx]
+            
+        except Exception as e:
+            st.error(f"Style error: {str(e)}")
+    
+    # Message input row
     col1, col2 = st.columns([10, 1])
     with col1:
         user_input = st.text_input(
@@ -1279,50 +1022,81 @@ def validate_input(text):
 
 
 def get_ai_response(messages, session_id):
-    """Enhanced AI response with better error handling"""
+    """Enhanced AI response using Advanced AI Service with multiple models and styles"""
     try:
-        response = requests.post(
-            "http://localhost:8000/chat",
-            json={"history": messages, "session_id": session_id},
-            timeout=30,
-            headers={"Content-Type": "application/json"},
+        # Get user preferences from session state
+        preferred_model = getattr(st.session_state, 'selected_ai_model', None)
+        conversation_style = getattr(st.session_state, 'selected_style', 'helpful')
+        temperature = getattr(st.session_state, 'temperature', 0.7)
+        
+        # Convert style string to enum
+        style_enum = ConversationStyle(conversation_style)
+        
+        # Use advanced AI service to generate response
+        response = st.session_state.ai_service.generate_response(
+            messages=messages,
+            session_id=session_id,
+            style=style_enum,
+            preferred_model=preferred_model,
+            temperature=temperature
         )
-
-        if response.status_code == 200:
-            data = response.json()
-            reply = data.get("reply", "").strip()
-
-            if not reply:
-                return False, "Received empty response from AI."
-
-            # Check for error indicators in response
-            error_indicators = [
-                "http error",
-                "request timed out",
-                "an unexpected error occurred",
-                "error:",
-                "failed to",
-            ]
-            if any(indicator in reply.lower() for indicator in error_indicators):
-                return False, f"AI Error: {reply}"
-
-            return True, reply
-
-        elif response.status_code == 429:
-            return False, "⚠️ Rate limit exceeded. Please wait before sending another message."
-        elif response.status_code == 500:
-            return False, "🔧 Server is experiencing issues. Please try again in a moment."
+        
+        if response.success:
+            return True, response.content
         else:
-            return False, f"❌ Server responded with status {response.status_code}"
-
-    except requests.exceptions.Timeout:
-        return False, "⏱️ Request timed out. The AI is taking longer than usual."
-    except requests.exceptions.ConnectionError:
-        return False, "🔌 Cannot connect to the AI server. Please ensure the backend is running."
-    except requests.exceptions.RequestException as e:
-        return False, f"🌐 Network error: {str(e)}"
+            # Try fallback to backend API if advanced AI fails
+            try:
+                fallback_response = requests.post(
+                    "http://localhost:8000/chat",
+                    json={"history": messages, "session_id": session_id},
+                    timeout=30,
+                    headers={"Content-Type": "application/json"},
+                )
+                
+                if fallback_response.status_code == 200:
+                    data = fallback_response.json()
+                    reply = data.get("reply", "").strip()
+                    if reply:
+                        return True, reply
+            except:
+                pass  # Fallback failed, use original error
+            
+            return False, response.error_message or "AI service failed to generate response"
+    
     except Exception as e:
-        return False, f"❌ Unexpected error: {str(e)}"
+        # Final fallback to original backend
+        try:
+            response = requests.post(
+                "http://localhost:8000/chat",
+                json={"history": messages, "session_id": session_id},
+                timeout=30,
+                headers={"Content-Type": "application/json"},
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                reply = data.get("reply", "").strip()
+
+                if not reply:
+                    return False, "Received empty response from AI."
+
+                return True, reply
+
+            elif response.status_code == 429:
+                return False, "⚠️ Rate limit exceeded. Please wait before sending another message."
+            elif response.status_code == 500:
+                return False, "🔧 Server is experiencing issues. Please try again in a moment."
+            else:
+                return False, f"❌ Server responded with status {response.status_code}"
+
+        except requests.exceptions.Timeout:
+            return False, "⏱️ Request timed out. The AI is taking longer than usual."
+        except requests.exceptions.ConnectionError:
+            return False, "🔌 Cannot connect to the AI server. Please ensure the backend is running."
+        except requests.exceptions.RequestException as e:
+            return False, f"🌐 Network error: {str(e)}"
+        except Exception as e:
+            return False, f"❌ Unexpected error: {str(e)}"
 
 
 # Handle message sending with enhanced features
