@@ -51,6 +51,10 @@ A sophisticated web application that provides a unified interface for multiple A
 - Code quality enforcement
 - Easy setup and deployment
 
+✅ **Clean Interface**
+- Dark theme that's easy on the eyes
+- Inline model selection (no cluttered sidebars)
+
 ## Quick Start
 
 ### Prerequisites
