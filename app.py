@@ -5,6 +5,7 @@ This module provides REST API endpoints for chat functionality.
 """
 
 from fastapi import FastAPI, HTTPException
+
 from models.chat_models import ChatRequest, ChatResponse
 from controllers.chat_controller import get_llm_reply
 
@@ -15,13 +16,13 @@ app = FastAPI()
 def chat(request: ChatRequest) -> ChatResponse:
     """
     Handle chat requests and return AI responses.
-    
+
     Args:
         request: ChatRequest containing the conversation history
-        
+
     Returns:
         ChatResponse: The AI assistant's reply
-        
+
     Raises:
         HTTPException: If there's an error processing the request
     """

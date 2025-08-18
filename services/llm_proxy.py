@@ -7,8 +7,8 @@ error handling for various failure scenarios.
 
 from typing import List, Dict, Any
 import requests
-from utils.error_handler import handle_api_error
 
+from utils.error_handler import handle_api_error
 
 class LLMProxy:
     """Proxy class for communicating with Google Gemini LLM API."""
@@ -16,7 +16,7 @@ class LLMProxy:
     def __init__(self, api_key: str) -> None:
         """
         Initialize the LLM proxy with API credentials.
-        
+
         Args:
             api_key: Google AI API key for authentication
         """
@@ -25,10 +25,10 @@ class LLMProxy:
     def send_message(self, history: List[Dict[str, Any]]) -> str:
         """
         Send message history to Google Gemini API and get response.
-        
+
         Args:
             history: List of message dictionaries with 'role' and 'content' keys
-            
+
         Returns:
             str: The AI assistant's response text
         """

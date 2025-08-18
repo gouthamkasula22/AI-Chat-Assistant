@@ -6,13 +6,13 @@ between the frontend and backend services.
 """
 
 from typing import List, Dict
-from pydantic import BaseModel
 
+from pydantic import BaseModel
 
 class ChatRequest(BaseModel):
     """
     Request model for chat API endpoint.
-    
+
     Attributes:
         history: List of message dictionaries containing conversation history
     """
@@ -22,7 +22,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     """
     Response model for chat API endpoint.
-    
+
     Attributes:
         reply: The AI assistant's response message
     """

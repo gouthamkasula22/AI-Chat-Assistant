@@ -19,15 +19,16 @@ Classes:
 from .ai_strategy import AIModelStrategy, ModelManager, ModelConfig, ModelResponse, ModelProvider
 from .gemini_strategy import GeminiStrategy, create_gemini_model
 from .huggingface_strategy import (
-    HuggingFaceStrategy, 
-    create_dialogpt_model, 
+
+    HuggingFaceStrategy,
+    create_dialogpt_model,
     create_blenderbot_model,
     create_dialogpt_medium_model
 )
 
 __all__ = [
     'AIModelStrategy',
-    'ModelManager', 
+    'ModelManager',
     'ModelConfig',
     'ModelResponse',
     'ModelProvider',
@@ -35,6 +36,6 @@ __all__ = [
     'create_gemini_model',
     'HuggingFaceStrategy',
     'create_dialogpt_model',
-    'create_blenderbot_model', 
+    'create_blenderbot_model',
     'create_dialogpt_medium_model'
 ]

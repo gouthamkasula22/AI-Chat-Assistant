@@ -1,14 +1,16 @@
 import unittest
 from unittest.mock import patch, Mock
-from services.llm_proxy import LLMProxy
 
+from services.llm_proxy import LLMProxy
 
 class TestLLMProxy(unittest.TestCase):
     @patch("services.llm_proxy.requests.post")
     def test_timeout(self, mock_post):
         mock_post.side_effect = Exception("Timeout")
         proxy = LLMProxy("fake_key")
-        result = proxy.send_message("Hello")
+        # Use correct message format - list of dictionaries
+        history = [{"role": "user", "content": "Hello"}]
+        result = proxy.send_message(history)
         self.assertIn("error", result.lower())
 
     @patch("services.llm_proxy.requests.post")
@@ -17,14 +19,18 @@ class TestLLMProxy(unittest.TestCase):
         mock_response.raise_for_status.side_effect = Exception("HTTPError")
         mock_post.return_value = mock_response
         proxy = LLMProxy("fake_key")
-        result = proxy.send_message("Hello")
+        # Use correct message format - list of dictionaries
+        history = [{"role": "user", "content": "Hello"}]
+        result = proxy.send_message(history)
         self.assertIn("error", result.lower())
 
     @patch("services.llm_proxy.requests.post")
     def test_network_error(self, mock_post):
         mock_post.side_effect = Exception("NetworkError")
         proxy = LLMProxy("fake_key")
-        result = proxy.send_message("Hello")
+        # Use correct message format - list of dictionaries
+        history = [{"role": "user", "content": "Hello"}]
+        result = proxy.send_message(history)
         self.assertIn("error", result.lower())
 
     @patch("services.llm_proxy.requests.post")
@@ -36,7 +42,9 @@ class TestLLMProxy(unittest.TestCase):
         }
         mock_post.return_value = mock_response
         proxy = LLMProxy("fake_key")
-        result = proxy.send_message("Hello")
+        # Use correct message format - list of dictionaries
+        history = [{"role": "user", "content": "Hello"}]
+        result = proxy.send_message(history)
         self.assertEqual(result, "Gemini reply")
 
 

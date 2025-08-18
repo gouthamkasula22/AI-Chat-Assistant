@@ -5,18 +5,18 @@ This module provides centralized error handling and logging functionality.
 """
 
 import logging
-import traceback
 from typing import Optional
 
+import traceback
 
 def handle_api_error(error: Exception, user_message: Optional[str] = None) -> str:
     """
     Handle API errors with logging and user-friendly messages.
-    
+
     Args:
         error: The exception that occurred
         user_message: Optional user-friendly error message
-        
+
     Returns:
         str: User-friendly error message to display
     """

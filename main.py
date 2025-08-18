@@ -9,15 +9,27 @@ and a clean user interface.
 import json
 import os
 import time
-import uuid
 from typing import Dict, Any, Optional, List
-
 import requests
+
+import uuid
 import streamlit as st
+from dotenv import load_dotenv
+
+# Load environment variables first
+load_dotenv()
 
 # Import our new chat history service
 from services.chat_history_service import ChatHistoryService
 from services.advanced_ai_service import AdvancedAIService, ConversationStyle
+from database.feedback_manager import FeedbackManager
+from components.feedback_ui import FeedbackUI
+
+# Import our logging system
+from utils.logger import get_logger, log_user_interaction, log_performance, log_security_event
+
+# Initialize logger
+logger = get_logger('main_app')
 
 st.set_page_config(page_title="AI Chat Assistant", page_icon="💬", layout="centered")
 
@@ -37,7 +49,7 @@ def get_advanced_ai_service():
 def get_browser_session_id() -> str:
     """
     Generate a consistent session ID that persists across browser refreshes.
-    
+
     Returns:
         str: A unique session identifier
     """
@@ -70,7 +82,7 @@ def save_session_data() -> None:
 def load_session_data() -> bool:
     """
     Load session data from temporary file.
-    
+
     Returns:
         bool: True if session data was successfully loaded, False otherwise
     """
@@ -460,7 +472,7 @@ try:
         # Get current AI model and style
         current_model = getattr(st.session_state, 'selected_ai_model', 'Auto')
         current_style = getattr(st.session_state, 'selected_style', 'helpful')
-        
+
         st.markdown(
             f'<div style="text-align: center; color: #a0aec0; margin-bottom: 1rem; font-size: 0.9rem;">'
             f'📝 <strong>{current_conversation["title"]}</strong> • '
@@ -484,33 +496,37 @@ except:
 # Initialize persistent session state
 def initialize_session_state():
     """Initialize session state with database-backed conversation data."""
-    
+
     # Create a unique session key that persists across refreshes
     if "session_key" not in st.session_state:
         st.session_state.session_key = get_browser_session_id()
-    
+
     # Initialize our chat history service
     if "chat_service" not in st.session_state:
         st.session_state.chat_service = get_chat_history_service()
-    
+
     # Initialize our advanced AI service
     if "ai_service" not in st.session_state:
         st.session_state.ai_service = get_advanced_ai_service()
-    
+
+    # Initialize feedback UI using the AI service's feedback manager
+    if "feedback_ui" not in st.session_state:
+        st.session_state.feedback_ui = FeedbackUI(st.session_state.ai_service.feedback_manager)
+
     # Initialize session ID
     if "session_id" not in st.session_state:
         st.session_state.session_id = st.session_state.session_key
-    
+
     # Try to load existing session data first
     session_loaded = load_session_data()
-    
+
     # Load conversation history from database if not loaded from session
     if "messages" not in st.session_state or not session_loaded:
         # Get conversation history from database
         history = st.session_state.chat_service.get_conversation_history(
             session_id=st.session_state.session_id
         )
-        
+
         # Convert database format to Streamlit format
         st.session_state.messages = []
         for msg in history:
@@ -518,11 +534,11 @@ def initialize_session_state():
                 "role": msg["role"],
                 "content": msg["content"]
             })
-        
+
         # Calculate statistics from loaded history
         st.session_state.message_count = len(st.session_state.messages)
         st.session_state.conversation_started = len(st.session_state.messages) > 0
-    
+
     # Initialize other session state variables
     if "last_input" not in st.session_state:
         st.session_state.last_input = None
@@ -532,7 +548,7 @@ def initialize_session_state():
         st.session_state.total_response_time = 0
     if "response_times" not in st.session_state:
         st.session_state.response_times = []
-    
+
     # Initialize AI configuration
     if "selected_ai_model" not in st.session_state:
         st.session_state.selected_ai_model = None
@@ -540,7 +556,7 @@ def initialize_session_state():
         st.session_state.selected_style = "helpful"
     if "temperature" not in st.session_state:
         st.session_state.temperature = 0.7
-    
+
     # Migration: Check for old session files and import them
     if "migration_checked" not in st.session_state:
         try:
@@ -558,7 +574,7 @@ def initialize_session_state():
                         "content": msg["content"]
                     })
                 st.session_state.message_count = len(st.session_state.messages)
-        except Exception as e:
+        except Exception as error:
             # Silent migration failure - don't disrupt user experience
             pass
         finally:
@@ -571,7 +587,7 @@ initialize_session_state()
 # Chat History Sidebar
 with st.sidebar:
     st.markdown("### 💬 Chat History")
-    
+
     # New Chat button
     if st.button("➕ New Chat", use_container_width=True):
         try:
@@ -585,31 +601,31 @@ with st.sidebar:
             initialize_session_state()
             st.success("🆕 Started new chat!")
             st.rerun()
-        except Exception as e:
+        except Exception as error:
             st.error(f"Error starting new chat: {str(e)}")
-    
+
     st.markdown("---")
-    
+
     # Show recent conversations
     try:
         recent_conversations = st.session_state.chat_service.get_recent_conversations(limit=10)
-        
+
         if recent_conversations:
             st.markdown("**Recent Conversations:**")
-            
+
             for conv in recent_conversations:
                 # Create a shorter display title
                 display_title = conv['title']
                 if len(display_title) > 30:
                     display_title = display_title[:27] + "..."
-                
+
                 # Show conversation info
                 created_date = conv['created_at'][:10]  # Just the date part
                 message_count = conv['total_messages']
-                
+
                 # Check if this is the current conversation
                 is_current = conv['session_id'] == st.session_state.session_id
-                
+
                 # Create a container for each conversation
                 with st.container():
                     if is_current:
@@ -622,12 +638,12 @@ with st.sidebar:
                                 # Switch to this conversation
                                 st.session_state.session_id = conv['session_id']
                                 st.session_state.session_key = conv['session_id']
-                                
+
                                 # Load conversation history
                                 history = st.session_state.chat_service.get_conversation_history(
                                     session_id=conv['session_id']
                                 )
-                                
+
                                 # Update session state
                                 st.session_state.messages = []
                                 for msg in history:
@@ -635,34 +651,34 @@ with st.sidebar:
                                         "role": msg["role"],
                                         "content": msg["content"]
                                     })
-                                
+
                                 st.session_state.message_count = len(st.session_state.messages)
                                 st.session_state.conversation_started = len(st.session_state.messages) > 0
-                                
+
                                 st.success(f"📂 Loaded conversation: {conv['title']}")
                                 st.rerun()
-                                
-                            except Exception as e:
+
+                            except Exception as error:
                                 st.error(f"Error loading conversation: {str(e)}")
-                        
+
                         st.caption(f"📅 {created_date} • 💬 {message_count} messages")
-                
+
                 st.markdown("")  # Add some spacing
         else:
             st.info("No previous conversations found.")
-            
-    except Exception as e:
+
+    except Exception as error:
         st.error(f"Error loading chat history: {str(e)}")
-    
+
     # Database Statistics (collapsible)
     with st.expander("📊 Database Stats"):
         try:
             stats = st.session_state.chat_service.get_service_stats()
             db_stats = stats['database_stats']
-            
+
             st.metric("Total Conversations", db_stats['conversations'])
             st.metric("Total Messages", db_stats['messages'])
-            
+
             # Database size in a readable format
             db_size_kb = db_stats['db_size_bytes'] / 1024
             if db_size_kb < 1024:
@@ -670,12 +686,12 @@ with st.sidebar:
             else:
                 size_display = f"{db_size_kb/1024:.1f} MB"
             st.metric("Database Size", size_display)
-            
+
             st.caption(f"Service Status: {stats['service_status']}")
-            
-        except Exception as e:
+
+        except Exception as error:
             st.error(f"Error loading stats: {str(e)}")
-    
+
     # AI Advanced Settings
     with st.expander("⚙️ Advanced Settings"):
         try:
@@ -689,66 +705,113 @@ with st.sidebar:
                 help="Higher values = more creative/random responses"
             )
             st.session_state.temperature = temperature
-            
+
             # Model testing
             if st.button("🧪 Test AI Models", use_container_width=True):
                 with st.spinner("Testing AI models..."):
                     test_results = st.session_state.ai_service.test_model_connectivity()
-                    
+
                     for model_name, result in test_results.items():
                         status = "✅" if result['is_available'] else "❌"
                         st.caption(f"{status} {model_name}: {result.get('error_message', 'OK')}")
-            
-        except Exception as e:
+
+        except Exception as error:
             st.error(f"Error loading AI settings: {str(e)}")
-    
+
     # AI Analytics Dashboard
     with st.expander("📈 AI Analytics"):
         try:
             analytics = st.session_state.ai_service.get_service_analytics()
-            
+
             # Usage metrics
             st.subheader("Usage Statistics")
             col1, col2 = st.columns(2)
-            
+
             with col1:
                 st.metric("Total Requests", analytics['usage_analytics']['total_requests'])
                 st.metric("Success Rate", f"{analytics['success_rate_percentage']}%")
-            
+
             with col2:
                 st.metric("Successful", analytics['usage_analytics']['successful_requests'])
                 st.metric("Failed", analytics['usage_analytics']['failed_requests'])
-            
+
             # Average response time
             avg_time = analytics['usage_analytics']['average_response_time']
             st.metric("Avg Response Time", f"{avg_time:.2f}s")
-            
+
             # Model usage breakdown
             if analytics['usage_analytics']['model_usage']:
                 st.subheader("Model Usage")
                 for model, count in analytics['usage_analytics']['model_usage'].items():
                     st.caption(f"🤖 {model}: {count} requests")
-            
+
             # Style usage breakdown
             if analytics['usage_analytics']['style_usage']:
                 st.subheader("Style Usage")
                 for style, count in analytics['usage_analytics']['style_usage'].items():
                     st.caption(f"🎭 {style.title()}: {count} requests")
-            
+
             # System health
             st.subheader("System Health")
             health = analytics['service_health']
             health_color = "🟢" if health == "healthy" else "🟡"
             st.caption(f"{health_color} Status: {health.title()}")
-            
+
             # Model system status
             model_status = analytics['model_system_status']
-            available_models = sum(1 for model in model_status['models'].values() 
+            available_models = sum(1 for model in model_status['models'].values()
                                  if model['is_available'] and model['within_rate_limit'])
             st.caption(f"🤖 Available Models: {available_models}/{model_status['total_models']}")
-            
-        except Exception as e:
+
+        except Exception as error:
             st.error(f"Error loading analytics: {str(e)}")
+
+    # Feedback & Learning Analytics
+    with st.expander("🧠 Learning Analytics"):
+        try:
+            learning_insights = st.session_state.ai_service.get_learning_insights()
+
+            if 'error' not in learning_insights:
+                insights = learning_insights.get('learning_insights', {})
+
+                # Model recommendations
+                if 'model_recommendations' in learning_insights:
+                    st.subheader("📊 Model Recommendations")
+                    recommendations = learning_insights['model_recommendations']
+                    for style, model in recommendations.items():
+                        st.caption(f"🎭 {style.title()}: {model}")
+
+                # Feedback statistics
+                if 'total_feedback' in insights:
+                    st.subheader("💬 Feedback Summary")
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        st.metric("Total Feedback", insights.get('total_feedback', 0))
+                        st.metric("Avg Rating", f"{insights.get('average_rating', 0):.1f}/5")
+
+                    with col2:
+                        st.metric("Positive Feedback", insights.get('positive_feedback_count', 0))
+                        st.metric("Learning Score", f"{insights.get('learning_effectiveness', 0):.1f}%")
+
+                # Top performing models
+                if 'top_models' in insights:
+                    st.subheader("🏆 Top Models")
+                    for model in insights['top_models'][:3]:
+                        st.caption(f"🤖 {model['model_name']}: {model['avg_rating']:.1f}⭐")
+
+                # Recent improvements
+                if 'recent_improvements' in insights:
+                    improvements = insights['recent_improvements']
+                    if improvements:
+                        st.subheader("📈 Recent Improvements")
+                        for improvement in improvements[:3]:
+                            st.caption(f"✨ {improvement}")
+            else:
+                st.info("📊 Learning analytics will appear after feedback is collected.")
+
+        except Exception as error:
+            st.error(f"Error loading learning analytics: {str(e)}")
 
 # Enhanced clear chat button layout
 col1, col2 = st.columns([4, 1])
@@ -795,21 +858,21 @@ with col2:
                 conversation = st.session_state.chat_service.db_manager.get_conversation_by_session(
                     st.session_state.session_id
                 )
-                
+
                 if conversation:
                     # Delete the conversation from database (cascades to messages)
                     st.session_state.chat_service.delete_conversation(conversation['id'])
-                
+
                 # Clear session state
                 st.session_state.clear()
-                
+
                 # Reinitialize with new session
                 initialize_session_state()
-                
+
                 st.success("✅ Chat cleared successfully!")
                 st.rerun()
-                
-            except Exception as e:
+
+            except Exception as error:
                 st.error(f"❌ Error clearing chat: {str(e)}")
                 # Fallback: clear session state anyway
                 st.session_state.clear()
@@ -849,14 +912,31 @@ for i, message in enumerate(st.session_state.messages):
             st.markdown(
                 f"""
             <div style="text-align: right; margin: 0.5rem 15% 1rem 0;">
-                <small style="color: #10b981; background: rgba(16, 185, 129, 0.1); 
-                              padding: 0.3rem 0.8rem; border-radius: 10px; 
+                <small style="color: #10b981; background: rgba(16, 185, 129, 0.1);
+                              padding: 0.3rem 0.8rem; border-radius: 10px;
                               border: 1px solid rgba(16, 185, 129, 0.3);">
                     ⚡ Response time: {response_time:.1f}s
                 </small>
             </div>
             """,
                 unsafe_allow_html=True,
+            )
+
+        # Add feedback UI for AI responses
+        if hasattr(st.session_state, 'feedback_ui'):
+            # Generate unique message ID using index, content, and timestamp
+            import time
+            message_id = abs(hash(f"{i}_{message['content'][:100]}_{time.time()}")) % 1000000
+            conversation_id = abs(hash(st.session_state.session_id)) % 10000
+
+            # Render feedback UI
+            st.session_state.feedback_ui.render_message_feedback(
+                message_id=message_id,
+                conversation_id=conversation_id,
+                ai_model_used="gemini-pro",  # Default model
+                conversation_style="helpful",  # Default style
+                response_time=1.0,  # Default response time
+                session_id=st.session_state.session_id
             )
 
         response_index += 1  # Increment for next AI response
@@ -866,14 +946,14 @@ st.markdown('<div class="input-container">', unsafe_allow_html=True)
 with st.form(key="chat_form", clear_on_submit=True):
     # AI Model & Style selector in compact row
     col_model, col_style, col_spacer = st.columns([2, 2, 6])
-    
+
     with col_model:
         # Get available models
         try:
             available_models = st.session_state.ai_service.get_available_models()
             model_options = []
             model_names = []
-            
+
             for model in available_models:
                 # Create more distinct shortened names
                 name = model['name']
@@ -888,17 +968,17 @@ with st.form(key="chat_form", clear_on_submit=True):
                 else:
                     # Fallback: remove common suffixes
                     short_name = name.replace(' Large', '').replace(' Medium', '').replace(' 400M', '')
-                
+
                 model_options.append(short_name)
                 model_names.append(model['name'])
-            
+
             if model_options:
                 # Find the index of the currently selected model
                 current_model = getattr(st.session_state, 'selected_ai_model', None)
                 default_idx = 0
                 if current_model and current_model in model_names:
                     default_idx = model_names.index(current_model)
-                
+
                 selected_model_idx = st.selectbox(
                     "Model",
                     range(len(model_options)),
@@ -907,15 +987,15 @@ with st.form(key="chat_form", clear_on_submit=True):
                     key="inline_model_selection",
                     help="AI Model"
                 )
-                
+
                 if model_names:
                     st.session_state.selected_ai_model = model_names[selected_model_idx]
             else:
                 st.warning("No models")
-                
-        except Exception as e:
+
+        except Exception as error:
             st.error(f"Model error: {str(e)}")
-    
+
     with col_style:
         # Conversation style selector
         try:
@@ -924,19 +1004,19 @@ with st.form(key="chat_form", clear_on_submit=True):
             # Shortened style names for compact display
             style_short_names = {
                 'friendly': 'Friendly',
-                'professional': 'Professional', 
+                'professional': 'Professional',
                 'creative': 'Creative',
                 'analytical': 'Analytical',
                 'casual': 'Casual',
                 'helpful': 'Helpful'
             }
-            
+
             # Find the index of the currently selected style
             current_style = getattr(st.session_state, 'selected_style', 'helpful')
             default_style_idx = 5  # Default to "helpful"
             if current_style and current_style in style_options:
                 default_style_idx = style_options.index(current_style)
-            
+
             selected_style_idx = st.selectbox(
                 "Style",
                 range(len(style_options)),
@@ -945,12 +1025,12 @@ with st.form(key="chat_form", clear_on_submit=True):
                 key="inline_style_selection",
                 help="Conversation Style"
             )
-            
+
             st.session_state.selected_style = style_options[selected_style_idx]
-            
-        except Exception as e:
+
+        except Exception as error:
             st.error(f"Style error: {str(e)}")
-    
+
     # Message input row
     col1, col2 = st.columns([10, 1])
     with col1:
@@ -969,7 +1049,7 @@ st.markdown(
 document.addEventListener('DOMContentLoaded', function() {
     const sendButton = document.querySelector('[data-testid="stButton"] button');
     const inputField = document.querySelector('input[type="text"]');
-    
+
     if (sendButton && inputField) {
         sendButton.style.cssText = `
             position: absolute;
@@ -1031,10 +1111,10 @@ def get_ai_response(messages, session_id):
         preferred_model = getattr(st.session_state, 'selected_ai_model', None)
         conversation_style = getattr(st.session_state, 'selected_style', 'helpful')
         temperature = getattr(st.session_state, 'temperature', 0.7)
-        
+
         # Convert style string to enum
         style_enum = ConversationStyle(conversation_style)
-        
+
         # Use advanced AI service to generate response
         response = st.session_state.ai_service.generate_response(
             messages=messages,
@@ -1043,11 +1123,10 @@ def get_ai_response(messages, session_id):
             preferred_model=preferred_model,
             temperature=temperature
         )
-        
+
         if response.success:
             return True, response.content
-        else:
-            # Try fallback to backend API if advanced AI fails
+                    # Try fallback to backend API if advanced AI fails
             try:
                 fallback_response = requests.post(
                     "http://localhost:8000/chat",
@@ -1055,7 +1134,7 @@ def get_ai_response(messages, session_id):
                     timeout=30,
                     headers={"Content-Type": "application/json"},
                 )
-                
+
                 if fallback_response.status_code == 200:
                     data = fallback_response.json()
                     reply = data.get("reply", "").strip()
@@ -1063,10 +1142,10 @@ def get_ai_response(messages, session_id):
                         return True, reply
             except:
                 pass  # Fallback failed, use original error
-            
+
             return False, response.error_message or "AI service failed to generate response"
-    
-    except Exception as e:
+
+    except Exception as error:
         # Final fallback to original backend
         try:
             response = requests.post(
@@ -1096,24 +1175,42 @@ def get_ai_response(messages, session_id):
             return False, "⏱️ Request timed out. The AI is taking longer than usual."
         except requests.exceptions.ConnectionError:
             return False, "🔌 Cannot connect to the AI server. Please ensure the backend is running."
-        except requests.exceptions.RequestException as e:
-            return False, f"🌐 Network error: {str(e)}"
-        except Exception as e:
-            return False, f"❌ Unexpected error: {str(e)}"
+        except requests.exceptions.RequestException as error:
+            return False, f"🌐 Network error: {str(error)}"
+        except Exception as error:
+            return False, f"❌ Unexpected error: {str(error)}"
 
 
 # Handle message sending with enhanced features
 if submitted and user_input:
+    # Log user interaction
+    log_user_interaction(
+        session_id=st.session_state.session_id,
+        action="message_submitted",
+        input_length=len(user_input),
+        conversation_started=st.session_state.conversation_started,
+        message_count=st.session_state.message_count
+    )
+
     # Validate input
     is_valid, result = validate_input(user_input)
 
     if not is_valid:
         st.error(result)
+        log_security_event("invalid_input_blocked", {
+            "session_id": st.session_state.session_id,
+            "input": user_input[:100],  # Log first 100 chars only
+            "validation_error": result
+        })
     elif user_input != st.session_state.last_input:
         # Mark conversation as started
         if not st.session_state.conversation_started:
             st.session_state.conversation_started = True
             st.success("🚀 Conversation started!")
+            log_user_interaction(
+                session_id=st.session_state.session_id,
+                action="conversation_started"
+            )
 
         try:
             # Add user message to database and session state
@@ -1121,7 +1218,7 @@ if submitted and user_input:
                 session_id=st.session_state.session_id,
                 content=result
             )
-            
+
             # Add to session state for immediate display
             st.session_state.messages.append({"role": "user", "content": result})
             st.session_state.last_input = user_input
@@ -1145,7 +1242,7 @@ if submitted and user_input:
                         content=ai_response,
                         response_time=elapsed
                     )
-                    
+
                     # Add to session state for immediate display
                     st.session_state.messages.append({"role": "assistant", "content": ai_response})
                     st.session_state.message_count += 1
@@ -1166,9 +1263,9 @@ if submitted and user_input:
                     # Don't add failed responses to conversation history
                     st.session_state.messages.pop()  # Remove user message from session state
                     st.session_state.message_count -= 1
-                    
-        except Exception as e:
-            st.error(f"❌ Error saving message: {str(e)}")
+
+        except Exception as error:
+            st.error(f"❌ Error saving message: {str(error)}")
             # Continue with in-memory operation as fallback
             st.session_state.messages.append({"role": "user", "content": result})
             st.session_state.last_input = user_input
@@ -1180,14 +1277,14 @@ if submitted and user_input:
 if not st.session_state.messages:
     st.markdown(
         """
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 padding: 2rem; border-radius: 15px; margin: 1rem 0; text-align: center;
                 box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3); border: 1px solid #818cf8;">
         <h3 style="color: white; margin-bottom: 1rem;">👋 Welcome to AI Chat Assistant!</h3>
         <div style="color: #e2e8f0; font-size: 1.1rem; line-height: 1.6;">
             🎯 <strong>Clean & Simple Chat Experience:</strong><br>
             • Contextual conversations that remember your chat<br>
-            • Persistent sessions across browser refreshes<br>  
+            • Persistent sessions across browser refreshes<br>
             • Real-time response time tracking<br>
             • Professional, clutter-free interface<br><br>
             💬 <strong>Ready to start?</strong> Type your message above!
@@ -1200,8 +1297,8 @@ if not st.session_state.messages:
     # Simple session info display
     st.markdown(
         f"""
-    <div style="background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%); 
-                padding: 1.5rem; border-radius: 12px; margin-top: 1rem; 
+    <div style="background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+                padding: 1.5rem; border-radius: 12px; margin-top: 1rem;
                 border: 1px solid #667eea; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);">
         <div style="color: #e2e8f0; text-align: center;">
             <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">
